@@ -1,0 +1,40 @@
+current project obj : {
+  "name": "Pentest",
+  "id": "141091a3-172f-4638-9d92-4c7517ae8844",
+  "organization": "c542f10f-bdc1-456f-b0d7-6ca1243ea086"
+}
+
+ONEFORALL
+
+1. python3 /usr/src/app/tools/OneForAll/oneforall.py --target ypccollege.edu.my run 
+2. cat /usr/src/app/tools/OneForAll/results/ypccollege.edu.my.csv | tail -n +2 | cut -d ',' -f 6 > /usr/src/app/scan_results/subdomain_oneforall.txt
+3. rm -rf /usr/src/app/tools/OneForAll/results/ypccollege.edu.my.csv
+
+
+sublister
+
+1. python3 /usr/src/github/Sublist3r/sublist3r.py -d {host} -t {threads} -o {self.results_dir}/subdomains_sublister.txt
+
+
+subfinder
+
+1. subfinder -d {host} -o {self.results_dir}/subdomains_subfinder.txt
+
+
+ctfr
+
+1. python3 /usr/src/github/ctfr/ctfr.py -d {host} -o {results_file}
+2. cat {results_file} | sed 's/\*.//g' | tail -n +12 | uniq | sort > {results_file}
+
+
+tlsx
+
+1. tlsx -san -cn -silent -ro -host {host} | sed -n '/^\([a-zA-Z0-9]\([-a-zA-Z0-9]*[a-zA-Z0-9]\)\?\.\)\+{host}$/p' | uniq | sort > result
+
+
+netlas
+
+1. cmd = f'netlas search -d domain -i domain domain:"*.{host}" -f json'
+netlas_key = get_netlas_key()
+cmd += f' -a {netlas_key}' if netlas_key else ''
+cmd += f' | grep -oE '([a-zA-Z0-9]([-a-zA-Z0-9]*[a-zA-Z0-9])?\.)+{host}' > {results_file}'
