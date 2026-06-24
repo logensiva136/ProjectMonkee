@@ -1,0 +1,4 @@
+n8n_data/
+pgdata/
+local-flies/
+*.csv
