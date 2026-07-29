@@ -12,23 +12,19 @@ dependencies = [
     "pydantic[email]>=2.9,<3",
     "pydantic-settings>=2.6,<3",
     "python-multipart>=0.0.12",
-
     # --- persistence ---
     "sqlalchemy[asyncio]>=2.0.36,<2.1",
     "asyncpg>=0.30,<0.31",
     "alembic>=1.14,<2",
     "uuid6>=2024.7.10",
-
     # --- workers ---
     "celery>=5.4,<6",
     "redis>=5.2,<6",
     "celery-redbeat>=2.2,<3",
-
     # --- collection ---
     "httpx>=0.27,<0.29",
     "feedparser>=6.0.11",
     "jinja2>=3.1.4",
-
     # --- security ---
     "argon2-cffi>=23.1",
     "pyotp>=2.9",
@@ -38,7 +34,6 @@ dependencies = [
     "zxcvbn>=4.4.28",
     # Logo upload processing: decode, strip metadata, re-encode (SPEC §6.1).
     "pillow>=11.0",
-
     # --- observability ---
     "structlog>=24.4",
     "prometheus-client>=0.21",

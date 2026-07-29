@@ -7,6 +7,7 @@ worse, a migration that drops the tables it cannot see.
 """
 
 from app.models.base import Base, SoftDeleteMixin, TimestampMixin, UUIDPrimaryKeyMixin, utcnow
+from app.models.collection import Signal, SignalTag, Source, SourceCategory, SourceRun
 from app.models.identity import AppSetting, AuditLog, RecoveryCode, RefreshToken, User
 from app.models.rbac import Panel, Permission, Role, RolePanel, RolePermission, UserRole
 
@@ -21,7 +22,12 @@ __all__ = [
     "Role",
     "RolePanel",
     "RolePermission",
+    "Signal",
+    "SignalTag",
     "SoftDeleteMixin",
+    "Source",
+    "SourceCategory",
+    "SourceRun",
     "TimestampMixin",
     "UUIDPrimaryKeyMixin",
     "User",
