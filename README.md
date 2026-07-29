@@ -3,8 +3,12 @@
 Self-hosted threat intelligence, third-party risk, and external attack surface monitoring for a
 financial-institution security team.
 
-**Build status: Phase 0 (Foundation) complete.** See [SPEC.md](SPEC.md) §12 for the phase plan and
+**Build status: Phase 1 (Identity) complete.** See [SPEC.md](SPEC.md) §12 for the phase plan and
 [DECISIONS.md](DECISIONS.md) for design decisions and their rationale.
+
+On a fresh database, `http://localhost:3000` opens the onboarding wizard. After it, sign-in
+requires a password plus a TOTP code, and the sidebar and route guards are built from whatever
+`GET /api/v1/me` returns for that user. Phase 2 adds sources and collection.
 
 ---
 
