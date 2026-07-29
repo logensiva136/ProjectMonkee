@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark light" />
+    <meta
+      name="description"
+      content="HAYABUSA — threat intelligence, third-party risk and external attack surface monitoring"
+    />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>HAYABUSA</title>
+
+    <!--
+      Applies the saved theme before the first paint. Without it a light-theme
+      user sees a dark flash while the JS bundle loads and Zustand rehydrates.
+
+      Kept as an external file rather than an inline <script> so the nginx
+      Content-Security-Policy can stay at `script-src 'self'` — no
+      'unsafe-inline', no hash to keep in sync.
+    -->
+    <script src="/theme-init.js"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <noscript>
+      <p style="padding: 2rem; font-family: system-ui">
+        HAYABUSA requires JavaScript to run.
+      </p>
+    </noscript>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

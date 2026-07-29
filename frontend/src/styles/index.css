@@ -1,0 +1,89 @@
+/**
+ * Global stylesheet. Imports the design tokens, then Tailwind's layers.
+ *
+ * Fonts are bundled via @fontsource rather than loaded from Google Fonts: the
+ * Content-Security-Policy in nginx.conf forbids third-party origins, and a
+ * self-hosted font cannot leak who is using the console to anyone else.
+ */
+
+@import '@fontsource-variable/inter';
+@import '@fontsource/jetbrains-mono/400.css';
+@import '@fontsource/jetbrains-mono/500.css';
+@import './tokens.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    /* Keyboard navigation (j/k, g d, /) must not fight smooth scrolling. */
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-bg text-base text-text antialiased;
+    font-feature-settings:
+      'cv02' 1,
+      'cv03' 1,
+      'cv04' 1;
+  }
+
+  /* Every numeric column aligns on the digit, not the glyph width (SPEC §9.1). */
+  .tabular,
+  table td,
+  table th {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* A visible focus ring is a WCAG 2.1 AA requirement (SPEC §9.1). Never
+     remove this without providing an equivalent indicator. */
+  :focus-visible {
+    @apply outline-none ring-2 ring-accent ring-offset-2 ring-offset-bg;
+  }
+
+  /* Scrollbars styled to disappear into the surface rather than punch a
+     bright rectangle through a dark UI. */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply rounded-md border-2 border-solid border-transparent bg-border bg-clip-content;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-border-focus bg-clip-content;
+  }
+}
+
+@layer utilities {
+  /* Machine data — CVE IDs, hashes, IPs, ports, versions (SPEC §9.1). */
+  .machine {
+    @apply font-mono text-sm tabular-nums;
+  }
+
+  /* Severity is a 3px left border, never a full-colour row background
+     (SPEC §9.1 signature details). */
+  .sev-bar {
+    @apply border-l-[3px] border-l-transparent;
+  }
+}
+
+/* SPEC §9.1 accessibility: honour the OS "reduce motion" setting. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

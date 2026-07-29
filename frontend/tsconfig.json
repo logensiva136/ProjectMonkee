@@ -1,0 +1,42 @@
+{
+  /* ONE tsconfig for the whole frontend — application code and vite.config.ts
+     alike. The Vite starter splits this into tsconfig.json +
+     tsconfig.node.json joined by a project reference, which then requires
+     composite-project rules that fight `noEmit`. One file is less machinery to
+     understand and less to go wrong (SPEC §9.0). */
+  "compilerOptions": {
+    "target": "ES2022",
+    "useDefineForClassFields": true,
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    /* `vite/client` declares the ambient modules for asset imports — without it
+       `import '@/styles/index.css'` is an unresolved module to tsc. */
+    "types": ["node", "vite/client"],
+    "skipLibCheck": true,
+
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+    "jsx": "react-jsx",
+
+    /* SPEC §9.0 Rule 2: strict stays on — it is what makes the compiler catch
+       mistakes for a maintainer who does not read TypeScript fluently. `any` is
+       the documented escape hatch when satisfying it would cost more than it
+       is worth. */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedSideEffectImports": true,
+
+    /* `@/` maps to `src/`, so imports never become ../../../ chains. */
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["src", "vite.config.ts"]
+}

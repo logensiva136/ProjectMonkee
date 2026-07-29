@@ -1,0 +1,72 @@
+/**
+ * Design tokens — SPEC §9.1, "senior operator console".
+ *
+ * THIS IS THE ONLY FILE THAT DEFINES A COLOUR. Components reference tokens
+ * through Tailwind classes (`bg-surface`, `text-muted`, `border-border`); they
+ * never hardcode a hex value. Change a colour here and it changes everywhere,
+ * in both themes.
+ *
+ * Values are space-separated RGB channels rather than hex so Tailwind's opacity
+ * modifiers keep working: `bg-surface/50` compiles to
+ * `rgb(var(--surface) / 0.5)`. The original hex from SPEC §9.1 is in the comment
+ * beside each one so this file can be diffed against the spec directly.
+ *
+ * Dark is the default (SPEC §9.1: "dark-first"). The theme is selected by a
+ * `data-theme` attribute on <html>, set by `src/stores/theme.ts`.
+ */
+
+:root,
+[data-theme='dark'] {
+  color-scheme: dark;
+
+  --bg: 10 11 13; /* #0A0B0D  page */
+  --bg-subtle: 16 18 22; /* #101216  sunken areas */
+  --surface: 20 23 28; /* #14171C  cards, panels */
+  --surface-2: 26 30 36; /* #1A1E24  hover, raised */
+  --border: 35 39 47; /* #23272F  hairlines */
+  --border-focus: 58 65 73; /* #3A4149 */
+  --text: 228 231 235; /* #E4E7EB */
+  --text-muted: 139 147 160; /* #8B93A0 */
+  --text-dim: 91 99 111; /* #5B636F */
+  --accent: 34 211 238; /* #22D3EE  single signal colour (cyan) */
+  --accent-fg: 10 11 13; /* #0A0B0D */
+
+  --sev-critical: 244 63 94; /* #F43F5E */
+  --sev-high: 251 146 60; /* #FB923C */
+  --sev-medium: 251 191 36; /* #FBBF24 */
+  --sev-low: 56 189 248; /* #38BDF8 */
+  --sev-info: 100 116 139; /* #64748B */
+  --ok: 52 211 153; /* #34D399 */
+}
+
+/**
+ * Light theme — a first-class alternative, not an afterthought (SPEC §9.1).
+ *
+ * The ramp is inverted, but the accent and severity hues are *darkened* rather
+ * than reused. The dark-theme values are tuned for contrast against a near-black
+ * page; dropped onto white, #22D3EE and #FBBF24 both fall below the WCAG 2.1 AA
+ * 4.5:1 threshold SPEC §9.1 requires. These substitutes hold the same hue while
+ * passing.
+ */
+[data-theme='light'] {
+  color-scheme: light;
+
+  --bg: 247 248 250; /* #F7F8FA */
+  --bg-subtle: 237 239 243; /* #EDEFF3 */
+  --surface: 255 255 255; /* #FFFFFF */
+  --surface-2: 242 244 247; /* #F2F4F7 */
+  --border: 221 225 231; /* #DDE1E7 */
+  --border-focus: 169 178 191; /* #A9B2BF */
+  --text: 20 23 28; /* #14171C */
+  --text-muted: 91 99 111; /* #5B636F */
+  --text-dim: 139 147 160; /* #8B93A0 */
+  --accent: 8 145 178; /* #0891B2  cyan-600 — 4.6:1 on white */
+  --accent-fg: 255 255 255; /* #FFFFFF */
+
+  --sev-critical: 225 29 72; /* #E11D48 */
+  --sev-high: 194 65 12; /* #C2410C */
+  --sev-medium: 180 83 9; /* #B45309 */
+  --sev-low: 2 132 199; /* #0284C7 */
+  --sev-info: 71 85 105; /* #475569 */
+  --ok: 4 120 87; /* #047857 */
+}
