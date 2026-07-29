@@ -20,6 +20,7 @@ from app.core.security import (
     totp_provisioning_uri,
     totp_qr_svg,
     validate_password,
+    verify_totp,
 )
 from app.db import get_session
 from app.schemas.setup import (
@@ -31,6 +32,8 @@ from app.schemas.setup import (
     SetupCompleteResponse,
     SetupStatus,
     TotpEnrolmentResponse,
+    TotpVerifyRequest,
+    TotpVerifyResponse,
 )
 from app.services import auth as auth_service
 from app.services import setup as setup_service
@@ -112,6 +115,29 @@ async def enrol_totp(_: GateDep, username: str = "operator") -> TotpEnrolmentRes
     secret = generate_totp_secret()
     uri = totp_provisioning_uri(secret, username)
     return TotpEnrolmentResponse(secret=secret, provisioning_uri=uri, qr_svg=totp_qr_svg(uri))
+
+
+@router.post(
+    "/verify-totp",
+    response_model=TotpVerifyResponse,
+    summary="Check a TOTP code without enrolling anything",
+)
+async def verify_totp_code(payload: TotpVerifyRequest, _: GateDep) -> TotpVerifyResponse:
+    """Let the wizard refuse to advance past step 4 on a bad code.
+
+    Persists nothing. `/setup/complete` verifies a fresh code again before
+    storing the secret, so this is a usability gate rather than the enforcement
+    point — a client skipping it still cannot create an account without 2FA.
+    """
+    if verify_totp(payload.secret, payload.code):
+        return TotpVerifyResponse(valid=True)
+    return TotpVerifyResponse(
+        valid=False,
+        detail=(
+            "That code is not valid. Check your device's clock is accurate and "
+            "enter the code currently shown."
+        ),
+    )
 
 
 @router.post(

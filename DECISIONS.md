@@ -147,6 +147,63 @@ runtime error later. It is regenerated with `npm run types` and never edited by 
 
 ---
 
+## Phase 1 — Identity
+
+### D-017 · Security state written on a failure path is committed explicitly
+
+**Choice.** `authenticate` and `rotate_refresh_token` call `session.commit()` *before* raising.
+
+**Why.** Found by testing, and it disarmed two controls completely. The `get_session`
+dependency rolls back when a handler raises — correct for ordinary writes, catastrophic here. The
+failed-login counter was incremented and then rolled back along with the 401, so it reset on every
+attempt and no account could ever lock. The identical fault silently defeated refresh-token replay
+detection: the family revocation was undone by the very error that reported it, leaving the stolen
+session working. Both now commit before raising, with the reason stated at each site so nobody
+"tidies away" what looks like a stray commit.
+
+### D-018 · Permissions are read from the database per request, not embedded in the JWT
+
+**Choice.** The access token carries only a subject. Roles and permissions are loaded on each
+request.
+
+**Why.** Embedding them makes revocation lag by the token lifetime: removing someone's role would
+leave it working for up to 15 minutes. Loading costs one indexed query against rows already cached
+by Postgres, and makes revocation immediate — which is what an operator expects when they strip
+access during an incident. Revisit only if profiling shows it matters.
+
+### D-019 · The setup gate is middleware, not a router dependency
+
+**Choice.** SPEC §6.1's "all other routes return 409" is enforced by middleware.
+
+**Why.** A dependency must be remembered on every new router, and the one time it is forgotten is
+the time an un-onboarded instance exposes an endpoint. Middleware covers routes that do not exist
+yet — including the seven phases still to come. Testing also caught that a bare `/api/v1/setup`
+prefix match exempted `/api/v1/setupx`; the exemption is now a path-segment match.
+
+### D-020 · Silent token refresh is deduplicated to a single in-flight request
+
+**Choice.** `refreshAccessToken()` in `frontend/src/lib/api.ts` shares one promise across callers.
+
+**Why.** Not an optimisation — a correctness requirement created by D-017's replay detection. A
+screen firing six queries at once would send six refreshes; the first rotates the token and the
+other five present the now-revoked one, which the backend correctly reads as theft and responds to
+by revoking the family. The user would be signed out at random by their own dashboard.
+
+### D-021 · Recovery codes are shown after completion, not inside wizard step 4
+
+**Choice.** Step 4 gates on a valid TOTP code via `POST /setup/verify-totp`; the ten codes are
+displayed on a final screen after `/setup/complete` returns them, behind an acknowledgement
+checkbox.
+
+**Why.** SPEC §6.1 step 4 asks for both a verified code and the codes displayed with an
+acknowledgement. The codes can only be generated server-side — letting the client supply them
+would let it choose its own — and nothing is persisted until the atomic submit. Splitting the two
+keeps the code gate real (a bad code cannot advance) without either weakening code generation or
+persisting a half-enrolled account. `/setup/verify-totp` stores nothing; `/setup/complete`
+re-verifies a fresh code before storing the secret, so it remains the enforcement point.
+
+---
+
 ## §13 open choices
 
 These are the four choices SPEC §13 explicitly delegates. Recorded now; each is revisited in the

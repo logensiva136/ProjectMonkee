@@ -105,14 +105,23 @@ where that thing **will** live, so the map stays valid as the build progresses.
 | Change how `/api` is proxied in production | `nginx.conf` |
 | Change how `/api` is proxied in local dev | `vite.config.ts` |
 | Ban another TypeScript construct | `eslint.config.js` → `no-restricted-syntax` |
+| **Add an item to the sidebar** | seed a `panel` row in `backend/app/seed/definitions.py` — the sidebar builds itself from `/me`, so `Sidebar.tsx` needs no edit |
+| Change how the sidebar groups or highlights | `src/components/layout/Sidebar.tsx` |
+| Add an icon for a new panel | `src/components/layout/PanelIcon.tsx` (one line) |
+| Change what the command palette offers | `src/components/layout/CommandPalette.tsx` |
+| Add or change a keyboard shortcut | `src/hooks/useKeyboardShortcuts.ts` + `ShortcutsHelp.tsx` |
+| Change the onboarding wizard | `src/features/setup/` — one file per step |
+| Change the password rules or strength meter | `backend/app/core/security.py` (the meter mirrors the backend) |
+| Change the login or 2FA screen | `src/features/auth/LoginPage.tsx`, `MfaPage.tsx` |
+| Change the user list columns | `src/features/admin/UserTable.tsx` |
+| Change the permission or panel matrix | `src/features/admin/PermissionMatrix.tsx`, `PanelMatrix.tsx` |
+| Change the audit row or its diff view | `src/features/admin/AuditRow.tsx` |
+| Change session handling or silent refresh | `src/lib/api.ts` + `src/stores/auth.ts` |
 | Add a column to the alerts table | `src/features/alerts/AlertTable.tsx` *(Phase 3)* |
 | Add a filter to the vendor list | `src/features/vendors/VendorFilters.tsx` *(Phase 5)* |
 | Change the nth-party graph layout | `src/features/vendors/VendorGraph.tsx` *(Phase 5)* |
 | Change the rule condition builder | `src/features/rules/ConditionBuilder.tsx` *(Phase 3)* |
 | Change the Telegram template editor | `src/features/telegram/TemplateEditor.tsx` *(Phase 3)* |
-| Add an item to the sidebar | `src/components/layout/Sidebar.tsx` *(Phase 1)* + seed a `panel` row in the backend |
-| Change what the command palette can do | `src/components/layout/CommandPalette.tsx` *(Phase 1)* |
-| Change the onboarding wizard | `src/features/setup/` *(Phase 1)* |
 
 **Rule of thumb:** to change a screen, you only ever open `src/features/<that-screen>/`. Everything
 for a feature — its components, its hooks, its API calls — lives together there.

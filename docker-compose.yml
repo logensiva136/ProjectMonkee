@@ -73,6 +73,12 @@ services:
     <<: *backend-image
     environment:
       HAYABUSA_ROLE: api
+      UPLOAD_DIR: /app/uploads
+    volumes:
+      # Organisation logos. Without a volume the logo vanishes the first time
+      # the container is replaced, and the console silently falls back to the
+      # generated monogram.
+      - uploads:/app/uploads
     ports:
       - "${API_HOST_PORT:-8000}:8000"
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
@@ -136,6 +142,7 @@ services:
 volumes:
   pgdata:
   redisdata:
+  uploads:
 
 networks:
   hayabusa:

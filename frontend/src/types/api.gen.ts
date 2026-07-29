@@ -65,10 +65,769 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/api/v1/setup/status': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Whether this instance still needs onboarding
+     * @description Unauthenticated, and never 410s — the frontend polls it on every boot.
+     */
+    get: operations['setup_status_api_v1_setup_status_get']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/setup/password-check': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Score a candidate password for the live strength meter
+     * @description Runs the same policy the final submit enforces.
+     *
+     *     Sharing the implementation means the meter can never say "strong" for a
+     *     password that `/setup/complete` will then reject.
+     */
+    post: operations['check_password_api_v1_setup_password_check_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/setup/totp': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Generate a TOTP secret and its QR code
+     * @description Mint a secret for the wizard to display.
+     *
+     *     Nothing is persisted here. The client holds the secret through step 4 and
+     *     submits it with `/setup/complete`, which re-verifies a fresh code against it
+     *     before storing anything — so an abandoned wizard leaves no half-enrolled
+     *     account behind.
+     */
+    post: operations['enrol_totp_api_v1_setup_totp_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/setup/verify-totp': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Check a TOTP code without enrolling anything
+     * @description Let the wizard refuse to advance past step 4 on a bad code.
+     *
+     *     Persists nothing. `/setup/complete` verifies a fresh code again before
+     *     storing the secret, so this is a usability gate rather than the enforcement
+     *     point — a client skipping it still cannot create an account without 2FA.
+     */
+    post: operations['verify_totp_code_api_v1_setup_verify_totp_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/setup/monogram-preview': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Preview the generated avatar for a name
+     * @description Live preview for step 2 when no logo is uploaded.
+     */
+    post: operations['preview_monogram_api_v1_setup_monogram_preview_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/setup/logo': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Upload the organisation logo
+     * @description Validate by magic bytes, strip metadata, normalise to 512x512 (SPEC §6.1).
+     *
+     *     The size check happens after reading, but `UploadFile` spools to disk beyond
+     *     a small threshold rather than buffering in memory, so an oversized upload
+     *     cannot exhaust RAM before it is rejected.
+     */
+    post: operations['upload_logo_api_v1_setup_logo_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/setup/complete': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Create the instance and sign the first operator in
+     * @description One atomic transaction (SPEC §6.1 step 5).
+     *
+     *     Creates the user, assigns Super Admin, writes settings, seeds reference
+     *     data, records the audit entry, and returns an access token plus the refresh
+     *     cookie so the operator lands signed in.
+     */
+    post: operations['complete_api_v1_setup_complete_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/auth/login': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Password step
+     * @description Verify credentials.
+     *
+     *     When the account has TOTP enabled — which every account created through
+     *     onboarding does — this returns only a five-minute `mfa_token`. No session
+     *     exists and no cookie is set until the second factor is verified.
+     */
+    post: operations['login_api_v1_auth_login_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/auth/mfa/verify': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Second factor
+     * @description Complete login with a TOTP code or a single-use recovery code.
+     */
+    post: operations['verify_mfa_api_v1_auth_mfa_verify_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/auth/refresh': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Rotate the session
+     * @description Exchange the refresh cookie for a new token pair.
+     *
+     *     Rotation is unconditional: the presented token is revoked and a new one
+     *     issued. Presenting an already-revoked token is treated as replay and revokes
+     *     the whole family — see `app.services.auth`.
+     */
+    post: operations['refresh_api_v1_auth_refresh_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/auth/logout': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * End this session
+     * @description Revoke the current refresh token and clear the cookie.
+     *
+     *     Deliberately does not require authentication: an expired access token must
+     *     not stop someone logging out, and the refresh cookie identifies the session
+     *     on its own.
+     */
+    post: operations['logout_api_v1_auth_logout_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/auth/sessions': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** List active sessions */
+    get: operations['list_sessions_api_v1_auth_sessions_get']
+    put?: never
+    post?: never
+    /** Revoke all sessions */
+    delete: operations['revoke_all_sessions_api_v1_auth_sessions_delete']
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/auth/sessions/{session_id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post?: never
+    /** Revoke one session */
+    delete: operations['revoke_session_api_v1_auth_sessions__session_id__delete']
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/auth/password/change': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Change your password
+     * @description Requires the current password, and ends every other session.
+     */
+    post: operations['change_password_api_v1_auth_password_change_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/auth/recovery-codes/regenerate': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Replace your recovery codes
+     * @description Invalidate all existing codes and issue ten new ones.
+     *
+     *     Returned in plaintext exactly once; only hashes are stored.
+     */
+    post: operations['regenerate_recovery_codes_api_v1_auth_recovery_codes_regenerate_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/me': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** The signed-in user and their access */
+    get: operations['me_api_v1_me_get']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/users': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** List users */
+    get: operations['list_users_api_v1_users_get']
+    put?: never
+    /**
+     * Create a user
+     * @description Create an account.
+     *
+     *     The new user has no second factor yet; they enrol one on first sign-in. An
+     *     administrator cannot enrol it for them — that would mean holding someone
+     *     else's second factor, which defeats the point of having one.
+     */
+    post: operations['create_user_api_v1_users_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/users/{user_id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Get a user */
+    get: operations['get_user_api_v1_users__user_id__get']
+    put?: never
+    post?: never
+    /**
+     * Deactivate and soft-delete a user
+     * @description Soft delete: the audit trail must keep pointing at a real row.
+     */
+    delete: operations['delete_user_api_v1_users__user_id__delete']
+    options?: never
+    head?: never
+    /** Update a user */
+    patch: operations['update_user_api_v1_users__user_id__patch']
+    trace?: never
+  }
+  '/api/v1/users/{user_id}/password': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Set a user's password */
+    post: operations['reset_password_api_v1_users__user_id__password_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/users/{user_id}/2fa/reset': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Clear a user's second factor
+     * @description Recovery path for a lost authenticator (SPEC §7 `/auth/2fa/reset`).
+     *
+     *     Clears the secret and every unused recovery code, so the user re-enrols at
+     *     next sign-in. Deliberately high-privilege and always audited: this is the
+     *     one action that can strip an account's second factor.
+     */
+    post: operations['reset_two_factor_api_v1_users__user_id__2fa_reset_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/users/{user_id}/unlock': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Unlock a user */
+    post: operations['unlock_user_api_v1_users__user_id__unlock_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/users/{user_id}/sessions': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** A user's active sessions */
+    get: operations['user_sessions_api_v1_users__user_id__sessions_get']
+    put?: never
+    post?: never
+    /** Sign a user out everywhere */
+    delete: operations['revoke_user_sessions_api_v1_users__user_id__sessions_delete']
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/permissions': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * All permissions
+     * @description Every permission the code enforces, for the role matrix UI.
+     */
+    get: operations['list_permissions_api_v1_permissions_get']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/panels': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * All panels
+     * @description Every navigable screen, for the panel visibility matrix.
+     */
+    get: operations['list_panels_api_v1_panels_get']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/roles': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** List roles */
+    get: operations['list_roles_api_v1_roles_get']
+    put?: never
+    /** Create a custom role */
+    post: operations['create_role_api_v1_roles_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/roles/{role_id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Get a role */
+    get: operations['get_role_api_v1_roles__role_id__get']
+    put?: never
+    post?: never
+    /** Delete a role */
+    delete: operations['delete_role_api_v1_roles__role_id__delete']
+    options?: never
+    head?: never
+    /**
+     * Update a role
+     * @description Rename a role, or replace its permission and panel sets.
+     *
+     *     System roles may be renamed and have their panel visibility tuned, but their
+     *     permissions are fixed — Super Admin in particular must keep every
+     *     permission, or the instance can be locked out of its own administration.
+     */
+    patch: operations['update_role_api_v1_roles__role_id__patch']
+    trace?: never
+  }
+  '/api/v1/audit-logs': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Read the audit log
+     * @description Newest first, cursor-paginated.
+     *
+     *     The cursor is the last row's `id`. Because ids are UUIDv7 and therefore
+     *     time-ordered, "everything older than this id" is both an index seek and
+     *     stable while new rows are being written — an OFFSET would shift under the
+     *     reader as the log grows.
+     */
+    get: operations['list_audit_logs_api_v1_audit_logs_get']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/settings': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Read instance settings
+     * @description Readable by any signed-in user — the app shell needs branding to render.
+     */
+    get: operations['read_settings_api_v1_settings_get']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    /** Update instance settings */
+    patch: operations['update_settings_api_v1_settings_patch']
+    trace?: never
+  }
+  '/api/v1/settings/logo': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Upload a new logo */
+    post: operations['upload_logo_api_v1_settings_logo_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/settings/monogram': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Preview a monogram */
+    get: operations['preview_monogram_api_v1_settings_monogram_get']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/media/{filename}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Serve an uploaded file
+     * @description Serve a stored logo.
+     *
+     *     Unauthenticated on purpose: the logo appears on the login screen, before
+     *     anyone has a token. It is a public brand asset, not sensitive data.
+     *
+     *     Path traversal is prevented by rejecting any name that is not a plain
+     *     filename with an expected suffix, and then by confirming the resolved path
+     *     is still inside the upload directory — belt and braces, because a traversal
+     *     here would serve arbitrary files off the container.
+     */
+    get: operations['serve_media_api_v1_media__filename__get']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
 }
 export type webhooks = Record<string, never>
 export interface components {
   schemas: {
+    /** AppSettingOut */
+    AppSettingOut: {
+      /** Org Name */
+      org_name: string | null
+      /** Org Initials */
+      org_initials: string | null
+      /** Org Logo Url */
+      org_logo_url: string | null
+      /** Brand Color */
+      brand_color: string
+      /** Timezone */
+      timezone: string
+      /** Setup Completed At */
+      setup_completed_at: string | null
+      /** Preferences */
+      preferences: {
+        [key: string]: unknown
+      }
+    }
+    /** AppSettingUpdate */
+    AppSettingUpdate: {
+      /** Org Name */
+      org_name?: string | null
+      /** Logo Filename */
+      logo_filename?: string | null
+      /** Brand Color */
+      brand_color?: string | null
+      /** Timezone */
+      timezone?: string | null
+      /** Preferences */
+      preferences?: {
+        [key: string]: unknown
+      } | null
+    }
+    /** AuditLogOut */
+    AuditLogOut: {
+      /** Id */
+      id: string
+      /** Actor Id */
+      actor_id: string | null
+      /** Actor Username */
+      actor_username: string | null
+      /** Action */
+      action: string
+      /** Entity Type */
+      entity_type: string | null
+      /** Entity Id */
+      entity_id: string | null
+      /** Before */
+      before: {
+        [key: string]: unknown
+      } | null
+      /** After */
+      after: {
+        [key: string]: unknown
+      } | null
+      /** Ip */
+      ip: string | null
+      /** Ua */
+      ua: string | null
+      /** Request Id */
+      request_id: string | null
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string
+    }
+    /** Body_upload_logo_api_v1_settings_logo_post */
+    Body_upload_logo_api_v1_settings_logo_post: {
+      /**
+       * File
+       * Format: binary
+       * @description PNG, JPG, WebP or SVG, max 2 MB
+       */
+      file: string
+    }
+    /** Body_upload_logo_api_v1_setup_logo_post */
+    Body_upload_logo_api_v1_setup_logo_post: {
+      /**
+       * File
+       * Format: binary
+       * @description PNG, JPG, WebP or SVG, max 2 MB
+       */
+      file: string
+    }
+    /** CursorPage[AuditLogOut] */
+    CursorPage_AuditLogOut_: {
+      /** Items */
+      items: components['schemas']['AuditLogOut'][]
+      /** Next Cursor */
+      next_cursor?: string | null
+      /**
+       * Has More
+       * @default false
+       */
+      has_more: boolean
+    }
     /** DependencyCheck */
     DependencyCheck: {
       /** Name */
@@ -79,6 +838,11 @@ export interface components {
       latency_ms?: number | null
       /** Detail */
       detail?: string | null
+    }
+    /** HTTPValidationError */
+    HTTPValidationError: {
+      /** Detail */
+      detail?: components['schemas']['ValidationError'][]
     }
     /**
      * HealthResponse
@@ -138,6 +902,197 @@ export interface components {
       /** Stale */
       stale: boolean
     }
+    /** LoginRequest */
+    LoginRequest: {
+      /** Username */
+      username: string
+      /** Password */
+      password: string
+    }
+    /**
+     * LoginResponse
+     * @description Either a finished login, or a demand for the second factor.
+     *
+     *     `status` discriminates. When it is `mfa_required` the caller holds an
+     *     `mfa_token` and no access token — the session does not exist yet.
+     */
+    LoginResponse: {
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: 'authenticated' | 'mfa_required'
+      /** Access Token */
+      access_token?: string | null
+      /**
+       * Token Type
+       * @default bearer
+       */
+      token_type: string
+      /** Expires In */
+      expires_in?: number | null
+      /**
+       * Mfa Token
+       * @description Short-lived proof the password step passed; valid 5 minutes
+       */
+      mfa_token?: string | null
+      /**
+       * Must Change Password
+       * @default false
+       */
+      must_change_password: boolean
+    }
+    /** LogoUploadResponse */
+    LogoUploadResponse: {
+      /** Filename */
+      filename: string
+      /** Url */
+      url: string
+    }
+    /**
+     * MeResponse
+     * @description Everything the frontend needs to render itself (SPEC §6.3).
+     *
+     *     The sidebar and route guards are built from `panels` and `permissions`. The
+     *     backend enforces permissions independently — this is what the UI *shows*,
+     *     not what it is *allowed* to do.
+     */
+    MeResponse: {
+      user: components['schemas']['UserSummary']
+      /** Roles */
+      roles: components['schemas']['RoleSummary'][]
+      /** Permissions */
+      permissions: string[]
+      /** Panels */
+      panels: components['schemas']['PanelOut'][]
+      /** Org Name */
+      org_name: string | null
+      /** Org Initials */
+      org_initials: string | null
+      /** Org Logo Url */
+      org_logo_url: string | null
+      /** Brand Color */
+      brand_color: string
+      /** Timezone */
+      timezone: string
+    }
+    /** MessageResponse */
+    MessageResponse: {
+      /** Message */
+      message: string
+    }
+    /** MfaVerifyRequest */
+    MfaVerifyRequest: {
+      /** Mfa Token */
+      mfa_token: string
+      /**
+       * Code
+       * @description Six-digit TOTP code, or a single-use recovery code
+       */
+      code: string
+    }
+    /**
+     * MonogramPreviewResponse
+     * @description Live preview of the generated avatar when no logo is uploaded.
+     */
+    MonogramPreviewResponse: {
+      /** Initials */
+      initials: string
+      /** Color */
+      color: string
+      /** Svg */
+      svg: string
+    }
+    /**
+     * PanelOut
+     * @description A sidebar entry. The frontend builds navigation purely from these.
+     */
+    PanelOut: {
+      /** Key */
+      key: string
+      /** Name */
+      name: string
+      /** Route */
+      route: string
+      /** Icon */
+      icon: string
+      /** Nav Group */
+      nav_group: string
+      /** Sort Order */
+      sort_order: number
+    }
+    /** PasswordChangeRequest */
+    PasswordChangeRequest: {
+      /** Current Password */
+      current_password: string
+      /** New Password */
+      new_password: string
+    }
+    /**
+     * PasswordCheckRequest
+     * @description Live strength meter input (SPEC §6.1 step 3).
+     */
+    PasswordCheckRequest: {
+      /** Password */
+      password: string
+      /** Username */
+      username?: string | null
+      /** Email */
+      email?: string | null
+      /** Full Name */
+      full_name?: string | null
+    }
+    /** PasswordCheckResponse */
+    PasswordCheckResponse: {
+      /** Acceptable */
+      acceptable: boolean
+      /**
+       * Score
+       * @description zxcvbn score; 3 is the minimum accepted
+       */
+      score: number
+      /**
+       * Problems
+       * @description Blocking issues, shown verbatim to the user
+       */
+      problems: string[]
+      /**
+       * Warning
+       * @default
+       */
+      warning: string
+      /**
+       * Suggestions
+       * @default []
+       */
+      suggestions: string[]
+      /**
+       * Crack Time
+       * @description Human-readable offline cracking estimate
+       */
+      crack_time: string
+    }
+    /** PasswordResetRequest */
+    PasswordResetRequest: {
+      /** New Password */
+      new_password: string
+      /**
+       * Must Change Password
+       * @default true
+       */
+      must_change_password: boolean
+    }
+    /** PermissionOut */
+    PermissionOut: {
+      /** Key */
+      key: string
+      /** Resource */
+      resource: string
+      /** Action */
+      action: string
+      /** Description */
+      description: string
+    }
     /**
      * ReadyResponse
      * @description Readiness: every dependency needed to serve traffic is reachable.
@@ -153,6 +1108,316 @@ export interface components {
       heartbeat?: components['schemas']['HeartbeatInfo'] | null
       /** Database Version */
       database_version?: string | null
+    }
+    /**
+     * RecoveryCodesResponse
+     * @description Regenerated codes. Shown once; only hashes are kept.
+     */
+    RecoveryCodesResponse: {
+      /** Recovery Codes */
+      recovery_codes: string[]
+    }
+    /** RoleCreate */
+    RoleCreate: {
+      /** Key */
+      key: string
+      /** Name */
+      name: string
+      /**
+       * Description
+       * @default
+       */
+      description: string
+      /**
+       * Permission Keys
+       * @default []
+       */
+      permission_keys: string[]
+      /**
+       * Panel Keys
+       * @default []
+       */
+      panel_keys: string[]
+    }
+    /** RoleDetail */
+    RoleDetail: {
+      /** Id */
+      id: string
+      /** Key */
+      key: string
+      /** Name */
+      name: string
+      /** Description */
+      description: string
+      /** Is System */
+      is_system: boolean
+      /** Permission Keys */
+      permission_keys: string[]
+      /** Panel Keys */
+      panel_keys: string[]
+      /** User Count */
+      user_count: number
+    }
+    /** RoleSummary */
+    RoleSummary: {
+      /** Id */
+      id: string
+      /** Key */
+      key: string
+      /** Name */
+      name: string
+      /** Description */
+      description: string
+      /** Is System */
+      is_system: boolean
+    }
+    /** RoleUpdate */
+    RoleUpdate: {
+      /** Name */
+      name?: string | null
+      /** Description */
+      description?: string | null
+      /** Permission Keys */
+      permission_keys?: string[] | null
+      /** Panel Keys */
+      panel_keys?: string[] | null
+    }
+    /**
+     * SessionInfo
+     * @description A live refresh-token session, for the sessions screen (SPEC §6.2).
+     */
+    SessionInfo: {
+      /** Id */
+      id: string
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string
+      /** Last Used At */
+      last_used_at: string | null
+      /**
+       * Expires At
+       * Format: date-time
+       */
+      expires_at: string
+      /** Ip */
+      ip: string | null
+      /** User Agent */
+      user_agent: string | null
+      /** Is Current */
+      is_current: boolean
+    }
+    /**
+     * SetupCompleteRequest
+     * @description The single atomic submission that creates the instance (SPEC §6.1 step 5).
+     */
+    SetupCompleteRequest: {
+      /** Full Name */
+      full_name: string
+      /** Username */
+      username: string
+      /**
+       * Email
+       * Format: email
+       */
+      email: string
+      /** Org Name */
+      org_name?: string | null
+      /** Logo Filename */
+      logo_filename?: string | null
+      /**
+       * Timezone
+       * @default Asia/Kuala_Lumpur
+       */
+      timezone: string
+      /**
+       * Brand Color
+       * @default #22D3EE
+       */
+      brand_color: string
+      /** Password */
+      password: string
+      /** Totp Secret */
+      totp_secret: string
+      /** Totp Code */
+      totp_code: string
+      /** Recovery Codes Acknowledged */
+      recovery_codes_acknowledged: boolean
+    }
+    /**
+     * SetupCompleteResponse
+     * @description Auto-login payload (SPEC §6.1 step 5).
+     *
+     *     Recovery codes appear here and nowhere else, ever again — they are hashed
+     *     at rest, so this response is the only chance to save them.
+     */
+    SetupCompleteResponse: {
+      /** Access Token */
+      access_token: string
+      /**
+       * Token Type
+       * @default bearer
+       */
+      token_type: string
+      /**
+       * Expires In
+       * @description Access token lifetime in seconds
+       */
+      expires_in: number
+      /** User Id */
+      user_id: string
+      /** Username */
+      username: string
+      /** Recovery Codes */
+      recovery_codes: string[]
+      /**
+       * Setup Completed At
+       * Format: date-time
+       */
+      setup_completed_at: string
+    }
+    /**
+     * SetupStatus
+     * @description Unauthenticated. Drives the frontend's hard redirect to /setup.
+     */
+    SetupStatus: {
+      /** Needs Setup */
+      needs_setup: boolean
+      /** App Name */
+      app_name: string
+      /** Org Name */
+      org_name?: string | null
+    }
+    /** TokenResponse */
+    TokenResponse: {
+      /** Access Token */
+      access_token: string
+      /**
+       * Token Type
+       * @default bearer
+       */
+      token_type: string
+      /** Expires In */
+      expires_in: number
+      /**
+       * Must Change Password
+       * @default false
+       */
+      must_change_password: boolean
+    }
+    /**
+     * TotpEnrolmentResponse
+     * @description Step 4: a secret to enrol, shown once and never returned again.
+     */
+    TotpEnrolmentResponse: {
+      /**
+       * Secret
+       * @description Base32, shown in copyable form
+       */
+      secret: string
+      /** Provisioning Uri */
+      provisioning_uri: string
+      /**
+       * Qr Svg
+       * @description Inline SVG of the provisioning URI
+       */
+      qr_svg: string
+    }
+    /**
+     * TotpVerifyRequest
+     * @description Step 4's gate: confirm the operator's authenticator is working.
+     *
+     *     Checked without persisting anything, so an abandoned wizard leaves no
+     *     half-enrolled account. `/setup/complete` re-verifies a fresh code before it
+     *     stores the secret — this endpoint is a usability gate, not the enforcement.
+     */
+    TotpVerifyRequest: {
+      /** Secret */
+      secret: string
+      /** Code */
+      code: string
+    }
+    /** TotpVerifyResponse */
+    TotpVerifyResponse: {
+      /** Valid */
+      valid: boolean
+      /** Detail */
+      detail?: string | null
+    }
+    /** UserCreate */
+    UserCreate: {
+      /** Full Name */
+      full_name: string
+      /** Username */
+      username: string
+      /**
+       * Email
+       * Format: email
+       */
+      email: string
+      /** Password */
+      password: string
+      /**
+       * Role Keys
+       * @default []
+       */
+      role_keys: string[]
+      /**
+       * Must Change Password
+       * @default true
+       */
+      must_change_password: boolean
+    }
+    /** UserSummary */
+    UserSummary: {
+      /** Id */
+      id: string
+      /** Full Name */
+      full_name: string
+      /** Username */
+      username: string
+      /** Email */
+      email: string
+      /** Is Active */
+      is_active: boolean
+      /** Is Locked */
+      is_locked: boolean
+      /** Totp Enabled */
+      totp_enabled: boolean
+      /** Must Change Password */
+      must_change_password: boolean
+      /** Last Login At */
+      last_login_at: string | null
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string
+      /** Role Keys */
+      role_keys: string[]
+      /** Initials */
+      initials: string
+    }
+    /** UserUpdate */
+    UserUpdate: {
+      /** Full Name */
+      full_name?: string | null
+      /** Email */
+      email?: string | null
+      /** Is Active */
+      is_active?: boolean | null
+      /** Role Keys */
+      role_keys?: string[] | null
+    }
+    /** ValidationError */
+    ValidationError: {
+      /** Location */
+      loc: (string | number)[]
+      /** Message */
+      msg: string
+      /** Error Type */
+      type: string
     }
   }
   responses: never
@@ -226,6 +1491,1164 @@ export interface operations {
         }
         content: {
           'text/plain; version=1.0.0; charset=utf-8': unknown
+        }
+      }
+    }
+  }
+  setup_status_api_v1_setup_status_get: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SetupStatus']
+        }
+      }
+    }
+  }
+  check_password_api_v1_setup_password_check_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['PasswordCheckRequest']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['PasswordCheckResponse']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  enrol_totp_api_v1_setup_totp_post: {
+    parameters: {
+      query?: {
+        username?: string
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['TotpEnrolmentResponse']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  verify_totp_code_api_v1_setup_verify_totp_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['TotpVerifyRequest']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['TotpVerifyResponse']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  preview_monogram_api_v1_setup_monogram_preview_post: {
+    parameters: {
+      query?: {
+        name?: string
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MonogramPreviewResponse']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  upload_logo_api_v1_setup_logo_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'multipart/form-data': components['schemas']['Body_upload_logo_api_v1_setup_logo_post']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['LogoUploadResponse']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  complete_api_v1_setup_complete_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SetupCompleteRequest']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SetupCompleteResponse']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  login_api_v1_auth_login_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['LoginRequest']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['LoginResponse']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  verify_mfa_api_v1_auth_mfa_verify_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['MfaVerifyRequest']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['TokenResponse']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  refresh_api_v1_auth_refresh_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['TokenResponse']
+        }
+      }
+    }
+  }
+  logout_api_v1_auth_logout_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MessageResponse']
+        }
+      }
+    }
+  }
+  list_sessions_api_v1_auth_sessions_get: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SessionInfo'][]
+        }
+      }
+    }
+  }
+  revoke_all_sessions_api_v1_auth_sessions_delete: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MessageResponse']
+        }
+      }
+    }
+  }
+  revoke_session_api_v1_auth_sessions__session_id__delete: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        session_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MessageResponse']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  change_password_api_v1_auth_password_change_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['PasswordChangeRequest']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MessageResponse']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  regenerate_recovery_codes_api_v1_auth_recovery_codes_regenerate_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['RecoveryCodesResponse']
+        }
+      }
+    }
+  }
+  me_api_v1_me_get: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MeResponse']
+        }
+      }
+    }
+  }
+  list_users_api_v1_users_get: {
+    parameters: {
+      query?: {
+        include_inactive?: boolean
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['UserSummary'][]
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  create_user_api_v1_users_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UserCreate']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['UserSummary']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  get_user_api_v1_users__user_id__get: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        user_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['UserSummary']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  delete_user_api_v1_users__user_id__delete: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        user_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MessageResponse']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  update_user_api_v1_users__user_id__patch: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        user_id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UserUpdate']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['UserSummary']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  reset_password_api_v1_users__user_id__password_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        user_id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['PasswordResetRequest']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MessageResponse']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  reset_two_factor_api_v1_users__user_id__2fa_reset_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        user_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MessageResponse']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  unlock_user_api_v1_users__user_id__unlock_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        user_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MessageResponse']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  user_sessions_api_v1_users__user_id__sessions_get: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        user_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SessionInfo'][]
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  revoke_user_sessions_api_v1_users__user_id__sessions_delete: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        user_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MessageResponse']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  list_permissions_api_v1_permissions_get: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['PermissionOut'][]
+        }
+      }
+    }
+  }
+  list_panels_api_v1_panels_get: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['PanelOut'][]
+        }
+      }
+    }
+  }
+  list_roles_api_v1_roles_get: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['RoleDetail'][]
+        }
+      }
+    }
+  }
+  create_role_api_v1_roles_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['RoleCreate']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['RoleDetail']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  get_role_api_v1_roles__role_id__get: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        role_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['RoleDetail']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  delete_role_api_v1_roles__role_id__delete: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        role_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MessageResponse']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  update_role_api_v1_roles__role_id__patch: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        role_id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['RoleUpdate']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['RoleDetail']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  list_audit_logs_api_v1_audit_logs_get: {
+    parameters: {
+      query?: {
+        actor_id?: string | null
+        /** @description Exact match, or a `prefix.` match */
+        action?: string | null
+        entity_type?: string | null
+        entity_id?: string | null
+        /** @description `id` of the last row seen */
+        cursor?: string | null
+        limit?: number
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CursorPage_AuditLogOut_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  read_settings_api_v1_settings_get: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AppSettingOut']
+        }
+      }
+    }
+  }
+  update_settings_api_v1_settings_patch: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AppSettingUpdate']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AppSettingOut']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  upload_logo_api_v1_settings_logo_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'multipart/form-data': components['schemas']['Body_upload_logo_api_v1_settings_logo_post']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['LogoUploadResponse']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  preview_monogram_api_v1_settings_monogram_get: {
+    parameters: {
+      query?: {
+        name?: string
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MonogramPreviewResponse']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  serve_media_api_v1_media__filename__get: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        filename: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
         }
       }
     }

@@ -50,6 +50,23 @@ class TotpEnrolmentResponse(BaseModel):
     qr_svg: str = Field(description="Inline SVG of the provisioning URI")
 
 
+class TotpVerifyRequest(BaseModel):
+    """Step 4's gate: confirm the operator's authenticator is working.
+
+    Checked without persisting anything, so an abandoned wizard leaves no
+    half-enrolled account. `/setup/complete` re-verifies a fresh code before it
+    stores the secret — this endpoint is a usability gate, not the enforcement.
+    """
+
+    secret: Annotated[str, Field(min_length=16)]
+    code: Annotated[str, Field(pattern=r"^\d{6}$")]
+
+
+class TotpVerifyResponse(BaseModel):
+    valid: bool
+    detail: str | None = None
+
+
 class MonogramPreviewResponse(BaseModel):
     """Live preview of the generated avatar when no logo is uploaded."""
 
