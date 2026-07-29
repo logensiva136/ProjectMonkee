@@ -1,0 +1,139 @@
+# HAYABUSA — full stack (SPEC §2).
+#
+#   cp .env.example .env && python scripts/gen_secrets.py
+#   docker compose up -d
+#
+# Services: postgres, redis, api, worker, beat, web.
+#
+# The shipped postgres publishes to host port 5433 by default so it cannot
+# collide with a dev Postgres already on 5432 (DECISIONS.md D-001). To use that
+# dev instance instead of this one, point DATABASE_URL at
+# host.docker.internal:5432 in .env — nothing else changes.
+
+x-backend-image: &backend-image
+  build:
+    context: ./backend
+    dockerfile: Dockerfile
+  image: hayabusa-backend:0.1.0
+  env_file: [.env]
+  restart: unless-stopped
+  depends_on:
+    postgres: {condition: service_healthy}
+    redis: {condition: service_healthy}
+  networks: [hayabusa]
+
+services:
+  # ------------------------------------------------------------- datastores --
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-hayabusa}
+      # Postgres stores in UTC and the app renders per-timezone (SPEC §5).
+      PGTZ: UTC
+    ports:
+      - "${POSTGRES_HOST_PORT:-5433}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      # -U and -d must be given explicitly or pg_isready checks the wrong role.
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-hayabusa}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    networks: [hayabusa]
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    # Redis holds the Celery broker, the RedBeat schedule and rate-limiter
+    # buckets. AOF keeps queued-but-unacked work across a restart.
+    command: >
+      redis-server
+      --appendonly yes
+      --appendfsync everysec
+      --maxmemory-policy noeviction
+    ports:
+      - "${REDIS_HOST_PORT:-6379}:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
+    networks: [hayabusa]
+
+  # ------------------------------------------------------------ application --
+  api:
+    <<: *backend-image
+    environment:
+      HAYABUSA_ROLE: api
+    ports:
+      - "${API_HOST_PORT:-8000}:8000"
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      # Generous: the first start also applies migrations.
+      start_period: 40s
+
+  worker:
+    <<: *backend-image
+    environment:
+      HAYABUSA_ROLE: worker
+    command:
+      - celery
+      - -A
+      - app.tasks
+      - worker
+      - --queues=collect,enrich,correlate,notify,easm
+      - --concurrency=4
+      - --loglevel=INFO
+    healthcheck:
+      test: ["CMD", "celery", "-A", "app.tasks", "inspect", "ping", "-d", "celery@$$HOSTNAME"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  beat:
+    <<: *backend-image
+    environment:
+      HAYABUSA_ROLE: beat
+    # RedBeat keeps the schedule in Redis, so beat holds no local state and this
+    # container can be replaced freely (DECISIONS.md D-012).
+    command:
+      - celery
+      - -A
+      - app.tasks
+      - beat
+      - --scheduler=redbeat.RedBeatScheduler
+      - --loglevel=INFO
+
+  # -------------------------------------------------------------------- web --
+  web:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: hayabusa-web:0.1.0
+    restart: unless-stopped
+    ports:
+      - "${WEB_HOST_PORT:-3000}:80"
+    depends_on:
+      api: {condition: service_started}
+    networks: [hayabusa]
+
+volumes:
+  pgdata:
+  redisdata:
+
+networks:
+  hayabusa:
+    driver: bridge

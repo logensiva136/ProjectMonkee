@@ -1,0 +1,85 @@
+# Development overlay.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+#
+# Differences from the production compose file:
+#   - application source is bind-mounted, so edits reload without a rebuild
+#   - uvicorn runs with --reload; Celery restarts on file change
+#   - the frontend is served by Vite's dev server (HMR) instead of nginx
+#   - Postgres and Redis publish on the standard ports for host-side tooling
+#
+# The `web` service is replaced entirely: in development it runs Vite, which
+# proxies /api itself (see vite.config.ts), so nginx is not involved.
+
+services:
+  postgres:
+    ports:
+      - "${POSTGRES_HOST_PORT:-5433}:5432"
+
+  api:
+    build:
+      target: runtime
+    volumes:
+      # Bind-mounting app/ and alembic/ only — not the whole context — keeps the
+      # image's /opt/venv from being shadowed by a host directory.
+      - ./backend/app:/app/app:ro
+      - ./backend/alembic:/app/alembic:ro
+    environment:
+      HAYABUSA_ROLE: api
+      APP_ENV: development
+      LOG_FORMAT: console
+      DB_ECHO: "false"
+    command:
+      - uvicorn
+      - app.main:app
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8000"
+      - --reload
+      - --reload-dir
+      - /app/app
+
+  worker:
+    volumes:
+      - ./backend/app:/app/app:ro
+    environment:
+      HAYABUSA_ROLE: worker
+      APP_ENV: development
+      LOG_FORMAT: console
+    # `--pool=solo` makes breakpoints and tracebacks behave predictably; the
+    # prefork pool forks away from the debugger.
+    command:
+      - celery
+      - -A
+      - app.tasks
+      - worker
+      - --queues=collect,enrich,correlate,notify,easm
+      - --pool=solo
+      - --loglevel=DEBUG
+
+  beat:
+    volumes:
+      - ./backend/app:/app/app:ro
+    environment:
+      HAYABUSA_ROLE: beat
+      APP_ENV: development
+      LOG_FORMAT: console
+
+  web:
+    image: node:22-alpine
+    build: !reset null
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+      # Anonymous volume so the container's node_modules (built for Linux) is
+      # not overwritten by the host's (built for Windows).
+      - /app/node_modules
+    environment:
+      VITE_API_PROXY_TARGET: http://api:8000
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0 --port 5173"
+    ports:
+      - "${VITE_HOST_PORT:-5173}:5173"
+    depends_on:
+      api: {condition: service_started}
+    networks: [hayabusa]
