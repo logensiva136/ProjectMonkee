@@ -90,8 +90,12 @@ class User(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Base):
     __tablename__ = "user"
 
     full_name: Mapped[str] = mapped_column(String(200), nullable=False)
-    username: Mapped[str] = mapped_column(CITEXT(), nullable=False, unique=True, index=True)
-    email: Mapped[str] = mapped_column(CITEXT(), nullable=False, unique=True, index=True)
+    # Uniqueness is enforced by the PARTIAL indexes in __table_args__, not here.
+    # An unconditional unique index would mean a soft-deleted account holds its
+    # username and email forever, so removing "alice" would permanently prevent
+    # ever creating another "alice".
+    username: Mapped[str] = mapped_column(CITEXT(), nullable=False)
+    email: Mapped[str] = mapped_column(CITEXT(), nullable=False)
     password_hash: Mapped[str] = mapped_column(Text, nullable=False)
 
     # server_default as well as default throughout, so a row inserted by hand in
@@ -131,11 +135,23 @@ class User(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Base):
     )
 
     __table_args__ = (
-        # Login looks users up by username and immediately checks the lock; the
-        # partial index keeps that lookup off soft-deleted rows.
+        # Partial unique indexes: a username or email is unique only among LIVE
+        # accounts. Soft-deleting a user therefore releases their identifiers for
+        # reuse, while their row — and everything in the audit trail pointing at
+        # it — stays intact.
+        #
+        # These double as the lookup indexes for login, which reads by username
+        # and immediately filters `deleted_at IS NULL`.
         Index(
-            "ix_user_active_username",
+            "uq_user_username_active",
             "username",
+            unique=True,
+            postgresql_where=text("deleted_at IS NULL"),
+        ),
+        Index(
+            "uq_user_email_active",
+            "email",
+            unique=True,
             postgresql_where=text("deleted_at IS NULL"),
         ),
     )

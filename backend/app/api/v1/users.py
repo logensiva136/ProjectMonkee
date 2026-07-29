@@ -105,11 +105,18 @@ async def create_user(
         raise UnprocessableError("; ".join(problems), field="password", problems=problems)
 
     clash = await session.execute(
-        select(User).where((User.username == payload.username) | (User.email == str(payload.email)))
+        select(User).where(
+            User.deleted_at.is_(None),
+            (User.username == payload.username) | (User.email == str(payload.email)),
+        )
     )
     if clash.scalar_one_or_none() is not None:
         # citext columns make this comparison case-insensitive, so "Admin" and
         # "admin" collide as intended.
+        #
+        # `deleted_at IS NULL` mirrors the partial unique indexes on the table:
+        # a removed account releases its username and email, so the same name
+        # can be issued to someone new.
         raise ConflictError("That username or email address is already in use.")
 
     user = User(

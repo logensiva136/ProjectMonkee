@@ -242,6 +242,70 @@ class TestRoleAdministration:
         assert response.status_code == 422
 
 
+class TestSoftDeleteReleasesIdentifiers:
+    async def test_a_removed_username_can_be_issued_again(
+        self, client: AsyncClient, admin_token: str
+    ) -> None:
+        """Regression: soft delete must not reserve a username forever.
+
+        Users are soft-deleted to keep the audit trail intact. With an
+        unconditional unique index that meant removing "alice" permanently
+        blocked ever creating another "alice", and the operator saw only an
+        unexplained 409. Uniqueness is now scoped to live rows.
+        """
+        first = await create_user(client, admin_token, username="alice", role_keys=["viewer"])
+
+        removed = await client.delete(f"/api/v1/users/{first['id']}", headers=auth(admin_token))
+        assert removed.status_code == 200
+
+        recreated = await client.post(
+            "/api/v1/users",
+            headers=auth(admin_token),
+            json={
+                "full_name": "Alice The Second",
+                "username": "alice",
+                "email": "alice@example.com",
+                "password": OTHER_PASSWORD,
+                "role_keys": ["viewer"],
+                "must_change_password": False,
+            },
+        )
+
+        assert recreated.status_code == 201, recreated.text
+        assert recreated.json()["id"] != first["id"]
+
+    async def test_a_live_username_is_still_rejected(
+        self, client: AsyncClient, admin_token: str
+    ) -> None:
+        await create_user(client, admin_token, username="bob", role_keys=["viewer"])
+
+        duplicate = await client.post(
+            "/api/v1/users",
+            headers=auth(admin_token),
+            json={
+                "full_name": "Bob Again",
+                "username": "bob",
+                "email": "bob2@example.com",
+                "password": OTHER_PASSWORD,
+                "role_keys": ["viewer"],
+                "must_change_password": False,
+            },
+        )
+
+        assert duplicate.status_code == 409
+
+    async def test_the_removed_account_keeps_its_audit_history(
+        self, client: AsyncClient, admin_token: str
+    ) -> None:
+        created = await create_user(client, admin_token, username="carol", role_keys=["viewer"])
+        await client.delete(f"/api/v1/users/{created['id']}", headers=auth(admin_token))
+
+        audit = (await client.get("/api/v1/audit-logs", headers=auth(admin_token))).json()
+        entities = [entry["entity_id"] for entry in audit["items"]]
+
+        assert created["id"] in entities
+
+
 class TestSelfProtection:
     async def test_cannot_deactivate_yourself(self, client: AsyncClient, admin_token: str) -> None:
         me = (await client.get("/api/v1/me", headers=auth(admin_token))).json()
