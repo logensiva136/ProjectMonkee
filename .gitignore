@@ -1,4 +1,40 @@
+# ---- secrets & local env ----
+.env
+.env.local
+*.pem
+*.key
+
+# ---- python ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# ---- node ----
+node_modules/
+dist/
+.vite/
+*.tsbuildinfo
+.eslintcache
+
+# ---- data & runtime ----
 n8n_data/
 pgdata/
 local-flies/
 *.csv
+uploads/
+backups/
+*.log
+
+# ---- editors / os ----
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
