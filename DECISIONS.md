@@ -54,6 +54,13 @@ it can provision the Python 3.12 required by SPEC §2 — the host has only 3.11
 a standard `pyproject.toml`, so nothing about the project is uv-specific and pip remains a
 fallback.
 
+**Interpreter pin.** `backend/.python-version` declares `3.12`, and the interpreter is a uv-managed
+CPython 3.12.13 rather than anything on the host. Without the pin file the right version was being
+chosen incidentally, so a fresh clone could silently land on a different interpreter — plausibly
+3.14, which is the host default and an unwise target for a stack resting on asyncpg, greenlet and
+Celery. `uv python install` provisions it; no system Python is involved at any point. 3.12 rather
+than 3.13 because SPEC §2 fixes it as part of the stack.
+
 ### D-005 · Ship `make.ps1` alongside the `Makefile`
 
 **Choice.** Keep the `Makefile` required by SPEC §11, and add a PowerShell script exposing the
