@@ -31,7 +31,11 @@ COPY --from=build /build/dist /usr/share/nginx/html
 
 EXPOSE 80
 
+# Probe 127.0.0.1, NOT localhost. Inside the container `localhost` resolves to
+# ::1 first, and `listen 80;` binds IPv4 only — so a localhost probe gets
+# "connection refused" from an nginx that is serving perfectly well, and the
+# container is marked unhealthy forever.
 HEALTHCHECK --interval=15s --timeout=3s --start-period=5s --retries=3 \
-    CMD wget --quiet --tries=1 --spider http://localhost/healthz || exit 1
+    CMD wget --quiet --tries=1 --spider http://127.0.0.1/healthz || exit 1
 
 CMD ["nginx", "-g", "daemon off;"]
