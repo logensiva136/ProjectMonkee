@@ -95,6 +95,18 @@ class TestMetrics:
         ):
             assert metric in body, f"{metric} missing from /metrics"
 
+    async def test_alertable_series_read_zero_before_their_first_event(
+        self, client: AsyncClient
+    ) -> None:
+        # A labelled counter emits no sample until that label combination is
+        # observed, and `rate()` over a missing series is missing rather than
+        # zero — so an alert on it would never fire. The closed-set labels are
+        # primed at import to avoid that; see app/core/metrics.py::_prime.
+        body = (await client.get("/api/v1/metrics")).text
+
+        assert 'hayabusa_deliveries_total{status="failed"} 0.0' in body
+        assert 'hayabusa_source_health{health="failing"} 0.0' in body
+
     async def test_records_http_request_latency(self, client: AsyncClient) -> None:
         await client.get("/api/v1/health")
 

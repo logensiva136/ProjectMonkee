@@ -1,11 +1,18 @@
 """Prometheus metrics (SPEC §10).
 
-Metric objects are defined at import time so they appear in `/metrics` with a
-zero value before the first event — a counter that only materialises after its
-first increment cannot be alerted on, because `rate()` over a missing series is
-missing rather than zero.
+Declaring a metric at import time registers its *family*, so `/metrics` carries
+the HELP and TYPE lines immediately. It does **not** create any sample: a
+labelled collector cannot know its label values in advance, so each series
+appears only once that label combination is first observed.
 
-Note on scaling: these live in the default in-process registry, which assumes one
+That matters, because `rate()` over a series that does not exist yet is missing
+rather than zero — so an alert on it silently never fires. Where the label values
+are a known, finite set, `_prime()` at the bottom of this module instantiates
+them up front so they read zero from boot. Where they are open-ended
+(`source_type`, task names), priming is impossible and alerts must be written to
+tolerate absence, e.g. `rate(...) or vector(0)`.
+
+Note on scaling: these live in a single in-process registry, which assumes one
 uvicorn worker per container. That is how `docker-compose.yml` runs the api. If
 the api is ever scaled to multiple workers *inside* one container, switch to
 `prometheus_client.multiprocess`.
@@ -95,3 +102,26 @@ TASK_RUNS = Counter(
     labelnames=("task", "status"),
     registry=REGISTRY,
 )
+
+# ------------------------------------------------------------------ priming --
+
+# Label values that form a closed set, mirroring the enums in SPEC §5.2 and §5.8.
+SOURCE_HEALTH_STATES = ("healthy", "degraded", "failing")
+DELIVERY_STATUSES = ("queued", "sending", "sent", "failed", "suppressed")
+
+
+def _prime() -> None:
+    """Materialise the series an operator is expected to alert on.
+
+    Without this, `hayabusa_deliveries_total{status="failed"}` does not exist
+    until the first delivery actually fails — so an alert watching for it would
+    stay silent through the entire period where nothing has failed yet, and
+    would look identical to a healthy system with a broken exporter.
+    """
+    for state in SOURCE_HEALTH_STATES:
+        SOURCE_HEALTH.labels(state).set(0)
+    for status in DELIVERY_STATUSES:
+        DELIVERIES.labels(status)
+
+
+_prime()
