@@ -8,7 +8,8 @@ dependencies = [
     # --- web ---
     "fastapi>=0.115,<0.116",
     "uvicorn[standard]>=0.32,<0.33",
-    "pydantic>=2.9,<3",
+    # [email] pulls in email-validator, which EmailStr needs at schema-build time.
+    "pydantic[email]>=2.9,<3",
     "pydantic-settings>=2.6,<3",
     "python-multipart>=0.0.12",
 
@@ -35,6 +36,8 @@ dependencies = [
     "python-jose[cryptography]>=3.3",
     "cryptography>=43.0",
     "zxcvbn>=4.4.28",
+    # Logo upload processing: decode, strip metadata, re-encode (SPEC §6.1).
+    "pillow>=11.0",
 
     # --- observability ---
     "structlog>=24.4",
@@ -85,7 +88,9 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = ["E501"]
+# A pytest fixture is requested by naming it as a parameter, so fixtures used
+# purely for their side effects (`onboarded`, `seeded`) are legitimately unread.
+"tests/*" = ["E501", "ARG001", "ARG002"]
 
 # ---------------------------------------------------------------------------
 
@@ -99,7 +104,16 @@ warn_unreachable = true
 disallow_untyped_decorators = false
 
 [[tool.mypy.overrides]]
-module = ["celery.*", "kombu.*", "redbeat.*", "feedparser.*", "zxcvbn.*", "jose.*", "uuid6.*"]
+module = [
+    "celery.*",
+    "kombu.*",
+    "redbeat.*",
+    "feedparser.*",
+    "zxcvbn.*",
+    "jose.*",
+    "uuid6.*",
+    "qrcode.*",
+]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]

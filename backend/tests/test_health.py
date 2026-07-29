@@ -138,7 +138,11 @@ class TestRequestCorrelation:
 
 
 class TestErrorEnvelope:
-    async def test_unknown_route_returns_problem_json(self, client: AsyncClient) -> None:
+    async def test_unknown_route_returns_problem_json(
+        self, client: AsyncClient, onboarded: object
+    ) -> None:
+        # `onboarded` is required: without it the SPEC §6.1 setup gate answers
+        # 409 to every non-exempt route, including unknown ones.
         response = await client.get("/api/v1/does-not-exist")
 
         assert response.status_code == 404

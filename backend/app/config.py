@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import base64
 from functools import lru_cache
+from pathlib import Path
 from typing import Annotated, Literal
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
@@ -55,6 +56,15 @@ class Settings(BaseSettings):
     # ---------------------------------------------------------------- auth ---
     access_token_ttl_minutes: int = 15
     refresh_token_ttl_days: int = 7
+
+    # SPEC §6.2 lockout policy.
+    max_failed_logins: int = 5
+    lockout_minutes: int = 15
+
+    # -------------------------------------------------------------- uploads ---
+    #: Where organisation logos are written. Must be a mounted volume in
+    #: production, or the logo vanishes when the container is replaced.
+    upload_dir: Path = Path("uploads")
 
     # -------------------------------------------------------- observability ---
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO"

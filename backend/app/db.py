@@ -20,6 +20,7 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
     create_async_engine,
 )
+from sqlalchemy.pool import NullPool
 
 from app.config import get_settings
 from app.core.logging import get_logger
@@ -35,15 +36,29 @@ def get_engine() -> AsyncEngine:
     global _engine
     if _engine is None:
         settings = get_settings()
+
+        # Under pytest each test gets its own event loop, and a pooled asyncpg
+        # connection is bound to the loop that opened it — so a pooled engine
+        # hands the second test a connection attached to a closed loop. NullPool
+        # opens and closes per use, which is slower but correct.
+        pool_kwargs: dict[str, Any] = (
+            {"poolclass": NullPool}
+            if settings.app_env == "test"
+            else {
+                "pool_size": settings.db_pool_size,
+                "max_overflow": settings.db_max_overflow,
+                "pool_timeout": settings.db_pool_timeout_seconds,
+            }
+        )
+
         _engine = create_async_engine(
             settings.database_url,
             echo=settings.db_echo,
-            pool_size=settings.db_pool_size,
-            max_overflow=settings.db_max_overflow,
-            pool_timeout=settings.db_pool_timeout_seconds,
+            **pool_kwargs,
             # Recycle below typical proxy/firewall idle timeouts, and verify a
             # connection before handing it out so a server restart surfaces as a
-            # brief reconnect rather than a burst of errors.
+            # brief reconnect rather than a burst of errors. Both are no-ops
+            # under NullPool, which never reuses a connection anyway.
             pool_recycle=settings.db_pool_recycle_seconds,
             pool_pre_ping=True,
             connect_args={

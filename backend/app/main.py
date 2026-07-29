@@ -11,6 +11,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from app import __version__
 from app.api.v1 import api_router
@@ -20,6 +21,7 @@ from app.core.errors import register_exception_handlers
 from app.core.logging import configure_logging, get_logger
 from app.core.middleware import RequestContextMiddleware, SecurityHeadersMiddleware
 from app.core.redis import close_redis
+from app.core.setup_gate import setup_gate_middleware
 from app.db import dispose_engine
 
 API_V1_PREFIX = "/api/v1"
@@ -65,12 +67,22 @@ def create_app() -> FastAPI:
         docs_url="/api/docs",
         redoc_url="/api/redoc",
         openapi_url=f"{API_V1_PREFIX}/openapi.json",
+        # Defaults to "/docs/oauth2-redirect", which would sit outside the
+        # /api prefix and therefore outside the setup gate's exempt list.
+        swagger_ui_oauth2_redirect_url="/api/docs/oauth2-redirect",
     )
 
     # --- middleware -------------------------------------------------------
-    # Starlette applies middleware in reverse registration order, so the last
-    # one added is the outermost. RequestContextMiddleware must be outermost:
-    # it establishes the correlation ID everything else logs against.
+    # Starlette applies middleware in REVERSE registration order, so the last
+    # one added is the outermost. The stack ends up, outside in:
+    #
+    #   RequestContext -> CORS -> SecurityHeaders -> SetupGate -> routes
+    #
+    # RequestContext is outermost so a correlation ID exists before anything
+    # else runs. SetupGate is innermost of the four so it only ever runs for a
+    # request that is definitely going to be handled.
+    app.add_middleware(BaseHTTPMiddleware, dispatch=setup_gate_middleware)
+    app.add_middleware(SecurityHeadersMiddleware, hsts=settings.is_production)
     if settings.cors_origins:
         app.add_middleware(
             CORSMiddleware,
@@ -81,7 +93,6 @@ def create_app() -> FastAPI:
             expose_headers=["X-Request-ID"],
             max_age=600,
         )
-    app.add_middleware(SecurityHeadersMiddleware, hsts=settings.is_production)
     app.add_middleware(RequestContextMiddleware)
 
     register_exception_handlers(app)
