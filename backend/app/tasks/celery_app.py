@@ -31,7 +31,7 @@ celery_app = Celery(
     broker=settings.redis_url,
     backend=settings.redis_url,
     task_cls="app.tasks.base:AppTask",
-    include=["app.tasks.system"],
+    include=["app.tasks.system", "app.tasks.collect"],
 )
 
 celery_app.conf.update(
@@ -86,6 +86,11 @@ celery_app.conf.update(
             "task": "app.tasks.system.heartbeat",
             "schedule": 30.0,
             "options": {"queue": "collect", "expires": 25},
+        },
+        "dispatch_due_sources": {
+            "task": "app.tasks.collect.dispatch_due_sources",
+            "schedule": 60.0,
+            "options": {"queue": "collect", "expires": 55},
         },
     },
 )

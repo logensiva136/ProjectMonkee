@@ -101,6 +101,9 @@ PERMISSIONS: list[PermissionDef] = [
 
 PANELS: list[PanelDef] = [
     PanelDef("dashboard", "Dashboard", "/", "layout-dashboard", "Overview", 10),
+    PanelDef("feeds_sources", "Sources", "/feeds/sources", "rss", "Feeds", 100),
+    PanelDef("feeds_categories", "Categories", "/feeds/categories", "folder-tree", "Feeds", 110),
+    PanelDef("feeds_items", "Items", "/feeds/items", "newspaper", "Feeds", 120),
     PanelDef("admin_users", "Users", "/admin/users", "users", "Administration", 900),
     PanelDef("admin_roles", "Roles", "/admin/roles", "shield-check", "Administration", 910),
     PanelDef("admin_settings", "Settings", "/admin/settings", "settings", "Administration", 920),
@@ -141,12 +144,13 @@ ROLES: list[RoleDef] = [
         ),
         permissions=[
             *_READ_PERMISSIONS,
+            "source:write",
             "signal:write",
             "cve:write",
             "rule:write",
             "alert:acknowledge",
         ],
-        panels=["dashboard"],
+        panels=["dashboard", "feeds_sources", "feeds_categories", "feeds_items"],
     ),
     RoleDef(
         key="tprm_officer",
@@ -164,7 +168,7 @@ ROLES: list[RoleDef] = [
             "alert:read",
             "alert:acknowledge",
         ],
-        panels=["dashboard"],
+        panels=["dashboard", "feeds_sources", "feeds_items"],
     ),
     RoleDef(
         key="viewer",
@@ -172,7 +176,7 @@ ROLES: list[RoleDef] = [
         description="Read-only access to dashboards. Cannot change anything.",
         # Deliberately narrow: SPEC §6.3 says "read-only, dashboards only".
         permissions=["alert:read", "signal:read"],
-        panels=["dashboard"],
+        panels=["dashboard", "feeds_items"],
     ),
 ]
 

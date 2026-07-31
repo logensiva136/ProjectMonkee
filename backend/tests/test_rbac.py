@@ -49,12 +49,12 @@ class TestAcceptanceCriterion:
         assert response.status_code == 403, f"{method} {path} should be forbidden for a Viewer"
         assert response.json()["title"] == "Forbidden"
 
-    async def test_viewer_sees_only_the_dashboard_panel(
+    async def test_viewer_sees_only_the_dashboard_and_feeds_items_panel(
         self, client: AsyncClient, viewer_token: str
     ) -> None:
         me = (await client.get("/api/v1/me", headers=auth(viewer_token))).json()
 
-        assert [panel["key"] for panel in me["panels"]] == ["dashboard"]
+        assert [panel["key"] for panel in me["panels"]] == ["dashboard", "feeds_items"]
 
     async def test_admin_can_reach_the_same_routes(
         self, client: AsyncClient, admin_token: str

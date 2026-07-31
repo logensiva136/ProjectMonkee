@@ -11,6 +11,7 @@ normally and rolls back if it raises, so service code never has to remember to.
 from __future__ import annotations
 
 from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from typing import Any
 
 from sqlalchemy import text
@@ -102,10 +103,11 @@ async def get_session() -> AsyncIterator[AsyncSession]:
             await session.commit()
 
 
+@asynccontextmanager
 async def session_scope() -> AsyncIterator[AsyncSession]:
     """Same contract as `get_session`, for code outside the request cycle.
 
-    Celery tasks use this via `async with session_context() as session`.
+    Celery tasks use this via `async with session_scope() as session`.
     """
     async for session in get_session():
         yield session
