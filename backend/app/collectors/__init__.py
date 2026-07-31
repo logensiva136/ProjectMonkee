@@ -12,6 +12,11 @@ never call `httpx` directly: the URL it is fetching came from an operator typing
 it into a form, and SPEC §10 requires every such URL be SSRF-guarded.
 """
 
+# Importing each adapter module registers it via the @register_adapter
+# decorator. This is the only file that needs to change (plus the SourceType
+# enum) to teach the pipeline about a new adapter.
+from app.collectors import feed as _feed  # noqa: F401
+from app.collectors import json_feed as _json_feed  # noqa: F401
 from app.collectors.base import (
     AdapterResult,
     RawItem,
@@ -20,12 +25,6 @@ from app.collectors.base import (
     register_adapter,
     registered_types,
 )
-
-# Importing each adapter module registers it via the @register_adapter
-# decorator. This is the only file that needs to change (plus the SourceType
-# enum) to teach the pipeline about a new adapter.
-from app.collectors import feed as _feed  # noqa: F401,E402
-from app.collectors import json_feed as _json_feed  # noqa: F401,E402
 
 __all__ = [
     "AdapterResult",

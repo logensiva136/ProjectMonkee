@@ -16,8 +16,8 @@ proceeds.
 from __future__ import annotations
 
 import secrets
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from typing import AsyncIterator
 
 from app.core.logging import get_logger
 from app.core.redis import get_redis
@@ -65,7 +65,10 @@ async def try_lock(key: str, *, ttl_seconds: int = DEFAULT_LOCK_TTL_SECONDS) -> 
     finally:
         if acquired:
             try:
-                await redis.eval(_RELEASE_SCRIPT, 1, key, token)
+                # redis.asyncio's eval typing returns Awaitable[str] | str depending on
+                # the client; awaiting the call works at runtime and we ignore the
+                # imprecise stub.
+                await redis.eval(_RELEASE_SCRIPT, 1, key, token)  # type: ignore[misc]
             except Exception as exc:  # noqa: BLE001 — releasing must not mask the caller's outcome
                 # Not fatal: the TTL still bounds how long the lock survives.
                 log.warning("lock_release_failed", key=key, error=str(exc))

@@ -66,7 +66,8 @@ def _next_poll_delay_seconds(source: Source, *, failed: bool) -> int:
 
     # 2^1, 2^2, ... — the failure that just happened is already reflected in
     # consecutive_failures by the time this is called.
-    multiplier = 2 ** min(source.consecutive_failures, 10)  # cap the exponent, not just the result
+    exponent = min(source.consecutive_failures, 10)  # cap the exponent, not just the result
+    multiplier = int(2**exponent)
     return min(source.poll_interval_seconds * multiplier, MAX_BACKOFF_SECONDS)
 
 
@@ -170,7 +171,7 @@ async def run_collection(
         error_message = f"blocked target: {exc.reason}"
     except FetchTooLargeError as exc:
         error_message = str(exc)
-    except Exception as exc:  # noqa: BLE001 — a collector fault must not crash the worker
+    except Exception as exc:
         error_message = f"{type(exc).__name__}: {exc}"
         log.error(
             "collection_failed",
@@ -273,6 +274,6 @@ async def _refresh_source_health_gauge(session: AsyncSession) -> None:
         .where(Source.deleted_at.is_(None))
         .group_by(Source.health)
     )
-    counts = dict(result.all())
+    counts: dict[str, int] = {health: count for health, count in result.all()}
     for state in (SourceHealth.HEALTHY, SourceHealth.DEGRADED, SourceHealth.FAILING):
         SOURCE_HEALTH.labels(state).set(counts.get(state, 0))

@@ -92,9 +92,12 @@ def is_public_address(ip: ipaddress.IPv4Address | ipaddress.IPv6Address) -> bool
     if str(ip) in _METADATA_DENYLIST:
         return False
 
-    if isinstance(ip, ipaddress.IPv6Address) and ip.ipv4_mapped is not None:
-        if not is_public_address(ip.ipv4_mapped):
-            return False
+    if (
+        isinstance(ip, ipaddress.IPv6Address)
+        and ip.ipv4_mapped is not None
+        and not is_public_address(ip.ipv4_mapped)
+    ):
+        return False
 
     return not (
         ip.is_private

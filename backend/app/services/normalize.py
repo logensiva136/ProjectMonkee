@@ -43,5 +43,5 @@ def compute_content_hash(item: RawItem) -> str | None:
     if not title and not url:
         return None
 
-    digest = hashlib.sha256(f"{title}|{url}".encode("utf-8")).hexdigest()
+    digest = hashlib.sha256(f"{title}|{url}".encode()).hexdigest()
     return digest

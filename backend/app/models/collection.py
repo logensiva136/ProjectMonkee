@@ -129,7 +129,11 @@ class Source(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Base):
         Integer, nullable=False, default=0, server_default=text("0")
     )
     health: Mapped[str] = mapped_column(
-        String(16), nullable=False, default=SourceHealth.HEALTHY, server_default="healthy", index=True
+        String(16),
+        nullable=False,
+        default=SourceHealth.HEALTHY,
+        server_default="healthy",
+        index=True,
     )
 
     default_severity: Mapped[str | None] = mapped_column(String(16), nullable=True)
