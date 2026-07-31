@@ -274,6 +274,7 @@ async def _refresh_source_health_gauge(session: AsyncSession) -> None:
         .where(Source.deleted_at.is_(None))
         .group_by(Source.health)
     )
-    counts: dict[str, int] = {health: count for health, count in result.all()}
+    rows = result.all()
+    counts: dict[str, int] = {row[0]: row[1] for row in rows}
     for state in (SourceHealth.HEALTHY, SourceHealth.DEGRADED, SourceHealth.FAILING):
         SOURCE_HEALTH.labels(state).set(counts.get(state, 0))
