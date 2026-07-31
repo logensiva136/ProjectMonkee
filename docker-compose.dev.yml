@@ -16,6 +16,16 @@ services:
     ports:
       - "${POSTGRES_HOST_PORT:-5433}:5432"
 
+  redis:
+    # The dev overlay replaces the service entirely because of the port change,
+    # so repeat the AOF persistence command. Without this, dev Redis reverts to
+    # the default snapshot-only config and loses queued Celery work on restart.
+    command: >
+      redis-server
+      --appendonly yes
+      --appendfsync everysec
+      --maxmemory-policy noeviction
+
   api:
     build:
       target: runtime
@@ -82,4 +92,7 @@ services:
       - "${VITE_HOST_PORT:-5173}:5173"
     depends_on:
       api: {condition: service_started}
+    # Inherit the same restart policy as the base compose so a dev stack is not
+    # silently less reliable than production.
+    restart: unless-stopped
     networks: [hayabusa]

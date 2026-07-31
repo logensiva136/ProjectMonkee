@@ -53,6 +53,12 @@ COPY --chown=hayabusa:hayabusa app ./app
 COPY --chown=hayabusa:hayabusa docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
+# The uploads directory must exist and be writable by the unprivileged user
+# before the volume is mounted. A named volume mounts over this path with the
+# same ownership if the directory already exists; without it, Docker creates it
+# as root and logo writes fail (DECISIONS.md D-009).
+RUN mkdir -p /app/uploads && chown -R hayabusa:hayabusa /app/uploads
+
 USER hayabusa
 
 EXPOSE 8000
